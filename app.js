@@ -1,12 +1,32 @@
 // ============================================================
-//  CONFIGURAÇÃO — substitua pelos seus valores do Supabase
+//  CONFIGURAÇÃO
 // ============================================================
 const SUPABASE_URL = 'https://gjqmufgqkdcengursevi.supabase.co'
 const SUPABASE_KEY = 'sb_publishable_a0OQA0T0LGcvipxLgEv4eg_ZBx_uI3R'
-// Projeto Supabase: gjqmufgqkdcengursevi
+
+// ⚠️ Troque pelo email real do barbeiro
+const EMAIL_BARBEIRO = 'yagoguiguis1221@barbearia.com'
 
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// ============================================================
+//  ENVIO DE EMAIL VIA EDGE FUNCTION
+// ============================================================
+async function enviarEmail({ tipo, cliente, servico, dataHora, email }) {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/enviar-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ tipo, cliente, servico, dataHora, email })
+    })
+  } catch (e) {
+    console.warn('Erro ao enviar email:', e)
+  }
+}
 
 // ============================================================
 //  ESTADO GLOBAL
@@ -22,7 +42,6 @@ let estado = {
   mesAtual: new Date()
 }
 
-// Horários padrão do barbeiro
 const HORARIOS = ['08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00']
 
 // ============================================================
@@ -41,7 +60,7 @@ function irTela(tela) {
 }
 
 // ============================================================
-//  TELA AGENDAR — PASSO 1: SERVIÇOS
+//  PASSO 1: SERVIÇOS
 // ============================================================
 async function carregarServicos() {
   const { data, error } = await db.from('servicos').select('*').eq('ativo', true).order('preco')
@@ -68,22 +87,16 @@ async function carregarServicos() {
 }
 
 function irPasso(n) {
-  if (n === 2) {
-    if (!estado.servico) {
-      document.getElementById('erro-servico').style.display = 'block'
-      return
-    }
+  if (n === 2 && !estado.servico) {
+    document.getElementById('erro-servico').style.display = 'block'
+    return
   }
   if (n === 3) {
-    if (!estado.dataStr) {
-      alert('Selecione uma data.')
-      return
-    }
+    if (!estado.dataStr) { alert('Selecione uma data.'); return }
     if (!estado.horario) {
       document.getElementById('erro-slot').style.display = 'block'
       return
     }
-    // montar resumo
     const d = new Date(estado.dataStr + 'T00:00:00')
     const dataFmt = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'long' })
     document.getElementById('resumo-agendamento').innerHTML = `
@@ -121,13 +134,13 @@ function renderCalendario() {
 
   for (let d = 1; d <= ultimoDia.getDate(); d++) {
     const data = new Date(mes.getFullYear(), mes.getMonth(), d)
+    const dataStr = `${mes.getFullYear()}-${String(mes.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
     const div = document.createElement('div')
     div.className = 'cal-dia'
     div.textContent = d
 
     const passado = data < hoje
     const domingo = data.getDay() === 0
-    const dataStr = `${mes.getFullYear()}-${String(mes.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
 
     if (passado || domingo) {
       div.classList.add('passado')
@@ -151,14 +164,11 @@ async function selecionarData(dataStr, el) {
   estado.dataStr = dataStr
   estado.horario = null
 
-  // buscar horários ocupados
-  const inicio = dataStr + 'T00:00:00'
-  const fim = dataStr + 'T23:59:59'
   const { data: agendados } = await db
     .from('agendamentos')
     .select('data_hora')
-    .gte('data_hora', inicio)
-    .lte('data_hora', fim)
+    .gte('data_hora', dataStr + 'T00:00:00')
+    .lte('data_hora', dataStr + 'T23:59:59')
     .in('status', ['pendente','confirmado'])
 
   const ocupados = (agendados || []).map(a => a.data_hora.substring(11,16))
@@ -188,7 +198,7 @@ async function selecionarData(dataStr, el) {
 }
 
 // ============================================================
-//  CONFIRMAR AGENDAMENTO
+//  CONFIRMAR AGENDAMENTO + EMAILS
 // ============================================================
 async function confirmarAgendamento() {
   const nome = document.getElementById('input-nome').value.trim()
@@ -233,12 +243,30 @@ async function confirmarAgendamento() {
     estado.clienteNome = nome
     estado.clienteTel = tel
 
-    // montar preview do email
+    // ✉️ Email de confirmação para o cliente
+    await enviarEmail({
+      tipo: 'confirmacao',
+      cliente: nome,
+      servico: estado.servico.nome,
+      dataHora,
+      email
+    })
+
+    // ✉️ Aviso para o barbeiro
+    await enviarEmail({
+      tipo: 'barbeiro',
+      cliente: nome,
+      servico: estado.servico.nome,
+      dataHora,
+      email: EMAIL_BARBEIRO
+    })
+
+    // montar preview na tela
     const d = new Date(estado.dataStr + 'T00:00:00')
     const dataFmt = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'long' })
     document.getElementById('email-preview').innerHTML = `
       <strong>Para:</strong> ${email}<br>
-      <strong>Assunto:</strong> Agendamento confirmado — Barbearia do Carlos<br><br>
+      <strong>Assunto:</strong> ✅ Agendamento confirmado — Barbearia do Carlos<br><br>
       Olá <strong>${nome}</strong>! Seu agendamento foi confirmado para <strong>${dataFmt} às ${estado.horario}</strong>.<br>
       Serviço: ${estado.servico.nome} · R$ ${Number(estado.servico.preco).toFixed(2).replace('.',',')}.<br>
       <small style="color:#6b6560">Um lembrete será enviado 1 dia antes.</small>
@@ -282,7 +310,6 @@ async function buscarMeusAgendamentos() {
   }
   const cliente = clientes[0]
 
-  // buscar agendamentos com serviço
   const { data: ags } = await db
     .from('agendamentos')
     .select('*, servicos(nome, preco, duracao_min)')
@@ -293,13 +320,11 @@ async function buscarMeusAgendamentos() {
   const proximos = (ags || []).filter(a => new Date(a.data_hora) >= agora)
   const historico = (ags || []).filter(a => new Date(a.data_hora) < agora)
 
-  // avatar
   const iniciais = cliente.nome.split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase()
   document.getElementById('client-avatar').textContent = iniciais
   document.getElementById('client-name').textContent = cliente.nome
   document.getElementById('client-phone').textContent = tel
 
-  // renderizar listas
   renderListaAgendamentos('lista-proximos', proximos, false)
   renderListaAgendamentos('lista-historico', historico, true)
 
@@ -341,8 +366,8 @@ function renderListaAgendamentos(containerId, lista, passado) {
       </div>
       ${!passado ? `
       <div class="appt-actions">
-        <button class="btn-appt" onclick="abrirRemarcar('${ag.id}', this)">📆 Remarcar</button>
-        <button class="btn-appt btn-appt-danger" onclick="abrirCancelar('${ag.id}', this)">✕ Cancelar</button>
+        <button class="btn-appt" onclick="abrirRemarcar('${ag.id}', '${ag.data_hora}')">📆 Remarcar</button>
+        <button class="btn-appt btn-appt-danger" onclick="abrirCancelar('${ag.id}')">✕ Cancelar</button>
       </div>
       <div class="cancel-box" id="cancel-${ag.id}" style="display:none">
         <p>⚠️ Confirma o cancelamento de ${dataFmt} às ${hora}?</p>
@@ -352,7 +377,7 @@ function renderListaAgendamentos(containerId, lista, passado) {
         </div>
       </div>
       <div id="remarcar-${ag.id}" style="display:none;margin-top:10px;background:#f8f7f5;border-radius:10px;padding:12px;">
-        <p style="font-size:13px;color:#6b6560;margin-bottom:8px;">Escolha um novo horário para ${dataFmt}:</p>
+        <p style="font-size:13px;color:#6b6560;margin-bottom:8px;">Escolha um novo horário:</p>
         <div class="slot-grid" id="slots-remarcar-${ag.id}"></div>
         <button class="btn-primary" style="margin-top:6px" onclick="confirmarRemarcar('${ag.id}', '${ag.data_hora.substring(0,10)}')">Confirmar novo horário</button>
       </div>
@@ -364,8 +389,8 @@ function renderListaAgendamentos(containerId, lista, passado) {
 
 function abrirCancelar(id) {
   document.getElementById('cancel-' + id).style.display = 'block'
-  const remarcar = document.getElementById('remarcar-' + id)
-  if (remarcar) remarcar.style.display = 'none'
+  const r = document.getElementById('remarcar-' + id)
+  if (r) r.style.display = 'none'
 }
 function fecharCancelar(id) { document.getElementById('cancel-' + id).style.display = 'none' }
 
@@ -375,15 +400,12 @@ async function cancelarAgendamento(id) {
   fecharCancelar(id)
 }
 
-async function abrirRemarcar(id, btn) {
+async function abrirRemarcar(id, dataHoraAtual) {
   const box = document.getElementById('remarcar-' + id)
   if (box.style.display === 'block') { box.style.display = 'none'; return }
   document.getElementById('cancel-' + id).style.display = 'none'
 
-  // pegar data do agendamento atual
-  const { data: ag } = await db.from('agendamentos').select('data_hora').eq('id', id).single()
-  const dataStr = ag.data_hora.substring(0,10)
-
+  const dataStr = dataHoraAtual.substring(0, 10)
   const { data: agendados } = await db
     .from('agendamentos')
     .select('data_hora')
@@ -419,7 +441,7 @@ async function confirmarRemarcar(id, dataStr) {
   const novaHora = `${dataStr}T${selected.textContent}:00`
   await db.from('agendamentos').update({ data_hora: novaHora, status: 'pendente' }).eq('id', id)
   document.getElementById('remarcar-' + id).style.display = 'none'
-  alert(`Remarcado para ${selected.textContent}. Você receberá um email de confirmação.`)
+  alert(`Remarcado para ${selected.textContent}!`)
   buscarMeusAgendamentos()
 }
 
@@ -428,8 +450,6 @@ function sairMeus() {
   document.getElementById('meus-lista').style.display = 'none'
   document.getElementById('login-tel').value = ''
 }
-
-// Painel do barbeiro movido para barbeiro.html
 
 // ============================================================
 //  INICIALIZAÇÃO
