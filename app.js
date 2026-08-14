@@ -5,7 +5,7 @@ const SUPABASE_URL = 'https://gjqmufgqkdcengursevi.supabase.co'
 const SUPABASE_KEY = 'sb_publishable_a0OQA0T0LGcvipxLgEv4eg_ZBx_uI3R'
 
 // ⚠️ Troque pelo email real do barbeiro
-const EMAIL_BARBEIRO = 'yagoguiguis1221@barbearia.com'
+const EMAIL_BARBEIRO = 'yagoguiguis1221@gmail.com'
 
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY)
