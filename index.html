@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Barbearia do Carlos — Agendamentos</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="app">
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3l6 6-6 6M12 15h6"/></svg>
+          Barbearia do Carlos
+        </div>
+        <nav class="nav">
+          <button class="nav-btn active" data-screen="agendar">Agendar</button>
+          <button class="nav-btn" data-screen="meus">Meus agendamentos</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main">
+
+      <!-- ===== AGENDAR ===== -->
+      <section id="screen-agendar" class="screen active">
+
+        <div id="passo-1" class="passo active">
+          <div class="step-bar">
+            <div class="step active"><span>1</span> Serviço</div>
+            <div class="step-line"></div>
+            <div class="step"><span>2</span> Data e hora</div>
+            <div class="step-line"></div>
+            <div class="step"><span>3</span> Seus dados</div>
+            <div class="step-line"></div>
+            <div class="step"><span>4</span> Confirmação</div>
+          </div>
+          <div class="card">
+            <h2>Escolha o serviço</h2>
+            <div class="service-grid" id="lista-servicos">
+              <div class="loading-msg">Carregando serviços...</div>
+            </div>
+            <p id="erro-servico" class="erro" style="display:none">Selecione um serviço para continuar.</p>
+            <button class="btn-primary" onclick="irPasso(2)">Continuar</button>
+          </div>
+        </div>
+
+        <div id="passo-2" class="passo">
+          <div class="step-bar">
+            <div class="step done"><span>✓</span> Serviço</div>
+            <div class="step-line done"></div>
+            <div class="step active"><span>2</span> Data e hora</div>
+            <div class="step-line"></div>
+            <div class="step"><span>3</span> Seus dados</div>
+            <div class="step-line"></div>
+            <div class="step"><span>4</span> Confirmação</div>
+          </div>
+          <div class="card">
+            <h2>Escolha a data</h2>
+            <div class="calendar-header">
+              <button class="btn-icon" onclick="mudarMes(-1)">&#8249;</button>
+              <span id="mes-label"></span>
+              <button class="btn-icon" onclick="mudarMes(1)">&#8250;</button>
+            </div>
+            <div class="cal-dias-semana">
+              <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+            <div id="slots-section" style="display:none">
+              <h3 id="slots-titulo"></h3>
+              <div class="slot-grid" id="lista-slots"></div>
+              <p id="erro-slot" class="erro" style="display:none">Selecione um horário para continuar.</p>
+            </div>
+            <button class="btn-primary" onclick="irPasso(3)">Continuar</button>
+          </div>
+        </div>
+
+        <div id="passo-3" class="passo">
+          <div class="step-bar">
+            <div class="step done"><span>✓</span> Serviço</div>
+            <div class="step-line done"></div>
+            <div class="step done"><span>✓</span> Data e hora</div>
+            <div class="step-line done"></div>
+            <div class="step active"><span>3</span> Seus dados</div>
+            <div class="step-line"></div>
+            <div class="step"><span>4</span> Confirmação</div>
+          </div>
+          <div class="card">
+            <h2>Seus dados</h2>
+            <div class="resumo-box" id="resumo-agendamento"></div>
+            <div class="form-group">
+              <label>Nome completo</label>
+              <input type="text" id="input-nome" placeholder="Seu nome completo" />
+              <p id="erro-nome" class="erro" style="display:none">Digite seu nome.</p>
+            </div>
+            <div class="form-group">
+              <label>Email <small>(receberá a confirmação aqui)</small></label>
+              <input type="email" id="input-email" placeholder="seu@email.com" />
+              <p id="erro-email" class="erro" style="display:none">Digite um email válido.</p>
+            </div>
+            <div class="form-group">
+              <label>Telefone / WhatsApp <small>(usado para consultar agendamentos)</small></label>
+              <input type="tel" id="input-tel" placeholder="(67) 99999-0000" />
+              <p id="erro-tel" class="erro" style="display:none">Digite seu telefone.</p>
+            </div>
+            <button class="btn-primary" id="btn-confirmar" onclick="confirmarAgendamento()">Confirmar agendamento</button>
+          </div>
+        </div>
+
+        <div id="passo-4" class="passo">
+          <div class="step-bar">
+            <div class="step done"><span>✓</span> Serviço</div>
+            <div class="step-line done"></div>
+            <div class="step done"><span>✓</span> Data e hora</div>
+            <div class="step-line done"></div>
+            <div class="step done"><span>✓</span> Seus dados</div>
+            <div class="step-line done"></div>
+            <div class="step done"><span>✓</span> Confirmação</div>
+          </div>
+          <div class="card success-card">
+            <div class="success-icon">✓</div>
+            <h2>Agendamento confirmado!</h2>
+            <p class="success-sub">Seu horário foi reservado com sucesso.</p>
+            <div class="email-preview" id="email-preview"></div>
+            <div class="success-actions">
+              <button class="btn-secondary" onclick="novoAgendamento()">Fazer novo agendamento</button>
+              <button class="btn-primary" onclick="irTela('meus')">Ver meus agendamentos</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===== MEUS AGENDAMENTOS ===== -->
+      <section id="screen-meus" class="screen">
+        <div id="meus-login" class="card login-card">
+          <div class="login-icon">📱</div>
+          <h2>Meus agendamentos</h2>
+          <p class="login-sub">Digite seu telefone para ver e gerenciar seus agendamentos.</p>
+          <div class="form-group">
+            <label>Telefone / WhatsApp</label>
+            <input type="tel" id="login-tel" placeholder="(67) 99999-0000"
+              onkeydown="if(event.key==='Enter') buscarMeusAgendamentos()" />
+            <p id="erro-login" class="erro" style="display:none">Telefone não encontrado.</p>
+          </div>
+          <button class="btn-primary" onclick="buscarMeusAgendamentos()">Buscar agendamentos</button>
+        </div>
+
+        <div id="meus-lista" style="display:none">
+          <div class="client-header">
+            <div class="client-avatar" id="client-avatar"></div>
+            <div>
+              <div class="client-name" id="client-name"></div>
+              <div class="client-phone" id="client-phone"></div>
+            </div>
+            <button class="btn-outline" onclick="sairMeus()">Sair</button>
+          </div>
+          <h3 class="section-label" style="margin-bottom:.75rem">Próximos agendamentos</h3>
+          <div id="lista-proximos"></div>
+          <h3 class="section-label" style="margin-top:1.5rem;margin-bottom:.75rem">Histórico</h3>
+          <div id="lista-historico"></div>
+          <button class="btn-primary" style="margin-top:1.5rem;width:100%" onclick="irTela('agendar')">
+            + Fazer novo agendamento
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

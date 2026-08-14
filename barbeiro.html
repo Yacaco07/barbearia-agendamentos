@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel do Barbeiro</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .login-barbeiro-wrap {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--cinza-0);
+      padding: 1.5rem;
+    }
+    .login-barbeiro-card {
+      background: var(--branco);
+      border: 1px solid var(--cinza-2);
+      border-radius: var(--radius-lg);
+      padding: 2rem 2rem;
+      width: 100%; max-width: 360px;
+      text-align: center;
+    }
+    .login-barbeiro-card .lock-icon { font-size: 36px; margin-bottom: .75rem; }
+    .login-barbeiro-card h2 { font-size: 18px; margin-bottom: .25rem; }
+    .login-barbeiro-card p { font-size: 13px; color: var(--cinza-4); margin-bottom: 1.5rem; }
+
+    .painel-header {
+      background: var(--branco);
+      border-bottom: 1px solid var(--cinza-2);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .painel-header-inner {
+      max-width: 900px; margin: 0 auto;
+      padding: .75rem 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .painel-logo {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 15px; font-weight: 600;
+    }
+    .painel-titulo {
+      font-size: 13px; color: var(--cinza-4);
+      margin-right: auto;
+    }
+
+    /* CALENDÁRIO DO BARBEIRO */
+    .barb-cal-wrap {
+      display: flex; gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .barb-cal-box {
+      flex: 0 0 auto;
+      background: var(--branco);
+      border: 1px solid var(--cinza-2);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      min-width: 260px;
+    }
+    .barb-cal-mes {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: .75rem;
+    }
+    .barb-cal-mes span { font-size: 14px; font-weight: 600; }
+    .barb-cal-semana {
+      display: grid; grid-template-columns: repeat(7,1fr);
+      gap: 2px; margin-bottom: 4px;
+    }
+    .barb-cal-semana span { text-align:center; font-size:10px; color:var(--cinza-3); }
+    .barb-cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+    .barb-dia {
+      aspect-ratio: 1; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; cursor: pointer; color: var(--cinza-4);
+      transition: all .12s; position: relative;
+    }
+    .barb-dia:hover:not(.vazio):not(.passado) { background: var(--cinza-1); color: var(--preto); }
+    .barb-dia.hoje { font-weight: 700; color: var(--preto); }
+    .barb-dia.passado { color: var(--cinza-2); cursor: default; }
+    .barb-dia.vazio { cursor: default; }
+    .barb-dia.selected { background: var(--preto); color: var(--branco); }
+    .barb-dia.tem-ag::after {
+      content: '';
+      position: absolute; bottom: 3px;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--verde);
+    }
+    .barb-dia.selected.tem-ag::after { background: var(--branco); }
+
+    .mes-nav-btns { display: flex; gap: .5rem; }
+
+    .filtro-bar {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .filtro-btn {
+      padding: 5px 12px; border-radius: 20px;
+      border: 1px solid var(--cinza-2); background: var(--branco);
+      font-size: 12px; cursor: pointer; color: var(--cinza-4);
+    }
+    .filtro-btn.active { background: var(--preto); color: var(--branco); border-color: var(--preto); }
+  </style>
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <div id="tela-login" class="login-barbeiro-wrap">
+    <div class="login-barbeiro-card">
+      <div class="lock-icon">🔐</div>
+      <h2>Painel do Barbeiro</h2>
+      <p>Digite a senha para acessar o painel de agendamentos.</p>
+      <div class="form-group" style="text-align:left">
+        <label>Senha</label>
+        <input type="password" id="input-senha" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter') fazerLogin()" />
+        <p id="erro-senha" class="erro" style="display:none">Senha incorreta.</p>
+      </div>
+      <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
+    </div>
+  </div>
+
+  <!-- PAINEL PRINCIPAL (oculto até login) -->
+  <div id="tela-painel" style="display:none">
+
+    <header class="painel-header">
+      <div class="painel-header-inner">
+        <div class="painel-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3l6 6-6 6M12 15h6"/></svg>
+          Barbearia do Carlos
+        </div>
+        <span class="painel-titulo">Painel do Barbeiro</span>
+        <button class="btn-outline" onclick="sairBarbeiro()">Sair</button>
+      </div>
+    </header>
+
+    <main class="main">
+
+      <!-- MÉTRICAS -->
+      <div class="metrics" id="metrics-bar">
+        <div class="metric-card"><div class="m-label">📅 Hoje</div><div class="m-value" id="m-hoje">—</div></div>
+        <div class="metric-card"><div class="m-label">✓ Confirmados</div><div class="m-value" id="m-conf">—</div></div>
+        <div class="metric-card"><div class="m-label">⏳ Pendentes</div><div class="m-value" id="m-pend">—</div></div>
+      </div>
+
+      <!-- CALENDÁRIO COMPLETO -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h3 style="font-size:15px;font-weight:600">Calendário de agendamentos</h3>
+          <div class="mes-nav-btns">
+            <button class="btn-icon" onclick="mudarMesBarbeiro(-1)">&#8249;</button>
+            <span id="barb-mes-label" style="font-size:13px;font-weight:500;min-width:120px;text-align:center"></span>
+            <button class="btn-icon" onclick="mudarMesBarbeiro(1)">&#8250;</button>
+          </div>
+        </div>
+        <div class="barb-cal-semana">
+          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+        </div>
+        <div class="barb-cal-grid" id="barb-cal-grid"></div>
+      </div>
+
+      <!-- LISTA DE AGENDAMENTOS DO DIA -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+          <h3 class="section-label" id="titulo-dia">Selecione um dia no calendário</h3>
+          <div class="filtro-bar" style="margin-bottom:0">
+            <button class="filtro-btn active" onclick="filtrar('todos', this)">Todos</button>
+            <button class="filtro-btn" onclick="filtrar('pendente', this)">Pendentes</button>
+            <button class="filtro-btn" onclick="filtrar('confirmado', this)">Confirmados</button>
+          </div>
+        </div>
+        <div id="lista-barbeiro"><p class="empty-msg">Clique em um dia para ver os agendamentos.</p></div>
+      </div>
+
+      <!-- EMAILS -->
+      <div class="card">
+        <h3 class="section-label" style="margin-bottom:.75rem">Emails automáticos</h3>
+        <div class="email-badges">
+          <div class="email-badge"><span class="dot green"></span> Confirmação ao agendar</div>
+          <div class="email-badge"><span class="dot green"></span> Lembrete 1 dia antes</div>
+          <div class="email-badge"><span class="dot green"></span> Aviso ao barbeiro</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://gjqmufgqkdcengursevi.supabase.co'
+    const SUPABASE_KEY = 'sb_publishable_a0OQA0T0LGcvipxLgEv4eg_ZBx_uI3R'
+    const SENHA_CORRETA = 'teste123'
+
+    const { createClient } = supabase
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+    let mesBarbeiro = new Date()
+    let diaAtivo = null
+    let agendamentosDoDia = []
+    let filtroAtivo = 'todos'
+    let diasComAgendamento = new Set()
+
+    // ===== LOGIN =====
+    function fazerLogin() {
+      const senha = document.getElementById('input-senha').value
+      if (senha !== SENHA_CORRETA) {
+        document.getElementById('erro-senha').style.display = 'block'
+        return
+      }
+      document.getElementById('tela-login').style.display = 'none'
+      document.getElementById('tela-painel').style.display = 'block'
+      iniciarPainel()
+    }
+
+    function sairBarbeiro() {
+      document.getElementById('tela-login').style.display = 'flex'
+      document.getElementById('tela-painel').style.display = 'none'
+      document.getElementById('input-senha').value = ''
+    }
+
+    // ===== PAINEL =====
+    async function iniciarPainel() {
+      await carregarMetricas()
+      await carregarDiasComAgendamento()
+      renderCalendarioBarbeiro()
+      // abrir no dia de hoje automaticamente
+      const hoje = new Date().toISOString().substring(0, 10)
+      diaAtivo = hoje
+      await carregarDiaBarbeiro(hoje)
+    }
+
+    async function carregarMetricas() {
+      const hoje = new Date().toISOString().substring(0, 10)
+      const { data } = await db
+        .from('agendamentos')
+        .select('status')
+        .gte('data_hora', hoje + 'T00:00:00')
+        .lte('data_hora', hoje + 'T23:59:59')
+        .in('status', ['pendente', 'confirmado'])
+
+      const total = data ? data.length : 0
+      const conf = data ? data.filter(a => a.status === 'confirmado').length : 0
+      const pend = data ? data.filter(a => a.status === 'pendente').length : 0
+      document.getElementById('m-hoje').textContent = total
+      document.getElementById('m-conf').textContent = conf
+      document.getElementById('m-pend').textContent = pend
+    }
+
+    async function carregarDiasComAgendamento() {
+      // buscar todos os dias que têm agendamento (sem limite)
+      const { data } = await db
+        .from('agendamentos')
+        .select('data_hora')
+        .in('status', ['pendente', 'confirmado'])
+
+      diasComAgendamento = new Set(
+        (data || []).map(a => a.data_hora.substring(0, 10))
+      )
+    }
+
+    // ===== CALENDÁRIO BARBEIRO =====
+    function renderCalendarioBarbeiro() {
+      const mes = mesBarbeiro
+      const label = mes.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+      document.getElementById('barb-mes-label').textContent =
+        label.charAt(0).toUpperCase() + label.slice(1)
+
+      const grid = document.getElementById('barb-cal-grid')
+      grid.innerHTML = ''
+
+      const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1)
+      const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 0)
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
+
+      for (let i = 0; i < primeiroDia.getDay(); i++) {
+        const v = document.createElement('div')
+        v.className = 'barb-dia vazio'
+        grid.appendChild(v)
+      }
+
+      for (let d = 1; d <= ultimoDia.getDate(); d++) {
+        const data = new Date(mes.getFullYear(), mes.getMonth(), d)
+        const dataStr = `${mes.getFullYear()}-${String(mes.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+        const div = document.createElement('div')
+        div.textContent = d
+
+        let classes = 'barb-dia'
+        if (data.getDay() === 0) classes += ' passado' // domingo bloqueado
+        if (diasComAgendamento.has(dataStr)) classes += ' tem-ag'
+        if (data.toDateString() === hoje.toDateString()) classes += ' hoje'
+        if (diaAtivo === dataStr) classes += ' selected'
+
+        div.className = classes
+
+        if (data.getDay() !== 0) {
+          div.addEventListener('click', () => selecionarDiaBarbeiro(dataStr, div))
+        }
+        grid.appendChild(div)
+      }
+    }
+
+    async function selecionarDiaBarbeiro(dataStr, el) {
+      document.querySelectorAll('.barb-dia').forEach(d => d.classList.remove('selected'))
+      el.classList.add('selected')
+      diaAtivo = dataStr
+      await carregarDiaBarbeiro(dataStr)
+    }
+
+    function mudarMesBarbeiro(dir) {
+      mesBarbeiro = new Date(mesBarbeiro.getFullYear(), mesBarbeiro.getMonth() + dir, 1)
+      renderCalendarioBarbeiro()
+    }
+
+    // ===== LISTA DO DIA =====
+    async function carregarDiaBarbeiro(dataStr) {
+      const lista = document.getElementById('lista-barbeiro')
+      lista.innerHTML = '<div class="loading-msg">Carregando...</div>'
+
+      const d = new Date(dataStr + 'T00:00:00')
+      const dataFmt = d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
+      document.getElementById('titulo-dia').textContent =
+        dataFmt.charAt(0).toUpperCase() + dataFmt.slice(1)
+
+      const { data: ags } = await db
+        .from('agendamentos')
+        .select('*, clientes(nome, telefone, email), servicos(nome, duracao_min, preco)')
+        .gte('data_hora', dataStr + 'T00:00:00')
+        .lte('data_hora', dataStr + 'T23:59:59')
+        .in('status', ['pendente', 'confirmado'])
+        .order('data_hora')
+
+      agendamentosDoDia = ags || []
+      renderListaBarbeiro()
+      await carregarMetricas()
+    }
+
+    function filtrar(status, btn) {
+      filtroAtivo = status
+      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      renderListaBarbeiro()
+    }
+
+    function renderListaBarbeiro() {
+      const lista = document.getElementById('lista-barbeiro')
+      const ags = filtroAtivo === 'todos'
+        ? agendamentosDoDia
+        : agendamentosDoDia.filter(a => a.status === filtroAtivo)
+
+      if (!ags.length) {
+        lista.innerHTML = '<p class="empty-msg">Nenhum agendamento encontrado.</p>'
+        return
+      }
+
+      lista.innerHTML = ''
+      ags.forEach(ag => {
+        const hora = ag.data_hora.substring(11, 16)
+        const nome = ag.clientes.nome
+        const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+        const badge = ag.status === 'confirmado'
+          ? '<span class="badge badge-verde">Confirmado</span>'
+          : '<span class="badge badge-amarelo">Pendente</span>'
+
+        const row = document.createElement('div')
+        row.className = 'barb-row'
+        row.id = 'row-' + ag.id
+        row.innerHTML = `
+          <div class="barb-hora">${hora}</div>
+          <div class="barb-avatar">${iniciais}</div>
+          <div class="barb-info">
+            <div class="barb-nome">${nome}</div>
+            <div class="barb-servico">
+              ${ag.servicos.nome} · ${ag.servicos.duracao_min} min ·
+              R$ ${Number(ag.servicos.preco).toFixed(2).replace('.', ',')} ·
+              📞 ${ag.clientes.telefone}
+            </div>
+          </div>
+          ${badge}
+          <div class="barb-actions">
+            ${ag.status === 'pendente'
+              ? `<button class="btn-barb btn-barb-ok" title="Confirmar" onclick="confirmarAg('${ag.id}')">✓</button>`
+              : ''}
+            <button class="btn-barb btn-barb-x" title="Cancelar" onclick="cancelarAg('${ag.id}')">✕</button>
+          </div>
+        `
+        lista.appendChild(row)
+      })
+    }
+
+    async function confirmarAg(id) {
+      await db.from('agendamentos').update({ status: 'confirmado' }).eq('id', id)
+      await carregarDiasComAgendamento()
+      renderCalendarioBarbeiro()
+      await carregarDiaBarbeiro(diaAtivo)
+    }
+
+    async function cancelarAg(id) {
+      if (!confirm('Cancelar este agendamento?')) return
+      await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id)
+      await carregarDiasComAgendamento()
+      renderCalendarioBarbeiro()
+      await carregarDiaBarbeiro(diaAtivo)
+    }
+  </script>
+</body>
+</html>
