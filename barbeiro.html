@@ -3,402 +3,595 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de consulta</title>
+  <title>Painel — Barbearia Studio Gueto</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="style.css" />
   <style>
-    .login-barbeiro-wrap {
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--cinza-0);
-      padding: 1.5rem;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --preto: #f8f7f5; --preto-2: #ffffff; --preto-3: #f0ede8; --preto-4: #e2ddd6;
+      --accent: #1a1a1a; --accent-2: #3a3633;
+      --cinza-3: #6b6560; --cinza-4: #b0a99e;
+      --verde: #1a6b3c; --verde-bg: #e8f5ee; --verde-borda: #a3d4b8;
+      --vermelho: #8b1a1a; --vermelho-bg: #fdf0f0; --vermelho-borda: #e8a0a0;
+      --amarelo: #7a5c00; --amarelo-bg: #fef9e6; --amarelo-borda: #f0d070;
+      --radius: 10px; --radius-lg: 14px;
     }
-    .login-barbeiro-card {
-      background: var(--branco);
-      border: 1px solid var(--cinza-2);
-      border-radius: var(--radius-lg);
-      padding: 2rem 2rem;
-      width: 100%; max-width: 360px;
-      text-align: center;
-    }
-    .login-barbeiro-card .lock-icon { font-size: 36px; margin-bottom: .75rem; }
-    .login-barbeiro-card h2 { font-size: 18px; margin-bottom: .25rem; }
-    .login-barbeiro-card p { font-size: 13px; color: var(--cinza-4); margin-bottom: 1.5rem; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--preto); color: var(--accent); min-height: 100vh; }
 
-    .painel-header {
-      background: var(--branco);
-      border-bottom: 1px solid var(--cinza-2);
-      position: sticky; top: 0; z-index: 100;
-    }
-    .painel-header-inner {
-      max-width: 900px; margin: 0 auto;
-      padding: .75rem 1.5rem;
-      display: flex; align-items: center; gap: 1rem;
-    }
-    .painel-logo {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 15px; font-weight: 600;
-    }
-    .painel-titulo {
-      font-size: 13px; color: var(--cinza-4);
-      margin-right: auto;
-    }
+    /* LOGIN */
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: var(--preto); }
+    .login-card { background: var(--preto-2); border: 1px solid var(--preto-4); border-radius: var(--radius-lg); padding: 2.5rem 2rem; width: 100%; max-width: 360px; text-align: center; }
+    .login-icon { font-size: 36px; margin-bottom: .75rem; }
+    .login-card h2 { font-size: 18px; margin-bottom: .25rem; }
+    .login-card p { font-size: 13px; color: var(--cinza-3); margin-bottom: 1.5rem; }
 
-    /* CALENDÁRIO DO BARBEIRO */
-    .barb-cal-wrap {
-      display: flex; gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
-    .barb-cal-box {
-      flex: 0 0 auto;
-      background: var(--branco);
-      border: 1px solid var(--cinza-2);
-      border-radius: var(--radius-lg);
-      padding: 1rem 1.25rem;
-      min-width: 260px;
-    }
-    .barb-cal-mes {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: .75rem;
-    }
-    .barb-cal-mes span { font-size: 14px; font-weight: 600; }
-    .barb-cal-semana {
-      display: grid; grid-template-columns: repeat(7,1fr);
-      gap: 2px; margin-bottom: 4px;
-    }
-    .barb-cal-semana span { text-align:center; font-size:10px; color:var(--cinza-3); }
-    .barb-cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
-    .barb-dia {
-      aspect-ratio: 1; border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; cursor: pointer; color: var(--cinza-4);
-      transition: all .12s; position: relative;
-    }
-    .barb-dia:hover:not(.vazio):not(.passado) { background: var(--cinza-1); color: var(--preto); }
-    .barb-dia.hoje { font-weight: 700; color: var(--preto); }
-    .barb-dia.passado { color: var(--cinza-2); cursor: default; }
-    .barb-dia.vazio { cursor: default; }
-    .barb-dia.selected { background: var(--preto); color: var(--branco); }
-    .barb-dia.tem-ag::after {
-      content: '';
-      position: absolute; bottom: 3px;
-      width: 4px; height: 4px; border-radius: 50%;
-      background: var(--verde);
-    }
-    .barb-dia.selected.tem-ag::after { background: var(--branco); }
+    /* HEADER */
+    .header { background: var(--preto-2); border-bottom: 1px solid var(--preto-4); position: sticky; top: 0; z-index: 100; }
+    .header-inner { max-width: 1100px; margin: 0 auto; padding: .75rem 1.5rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .logo { font-size: 15px; font-weight: 700; margin-right: auto; }
+    .logo span { font-size: 12px; font-weight: 400; color: var(--cinza-3); display: block; }
+    .tab-btn { padding: 6px 14px; border-radius: var(--radius); border: 1px solid var(--preto-4); background: transparent; color: var(--cinza-3); font-size: 13px; cursor: pointer; transition: all .15s; }
+    .tab-btn:hover { color: var(--accent); border-color: var(--accent-2); }
+    .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-sair { padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--preto-4); background: transparent; font-size: 13px; cursor: pointer; color: var(--cinza-3); }
+    .btn-sair:hover { color: var(--vermelho); border-color: var(--vermelho-borda); }
 
-    .mes-nav-btns { display: flex; gap: .5rem; }
+    .main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .tab-section { display: none; }
+    .tab-section.active { display: block; }
 
-    .filtro-bar {
-      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem;
+    /* CARDS */
+    .card { background: var(--preto-2); border: 1px solid var(--preto-4); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+    .card-title { font-size: 12px; font-weight: 600; color: var(--cinza-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 1rem; }
+
+    /* MÉTRICAS */
+    .metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 1.25rem; }
+    .metric-card { background: var(--preto-2); border: 1px solid var(--preto-4); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+    .m-label { font-size: 11px; color: var(--cinza-3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+    .m-value { font-size: 28px; font-weight: 700; color: var(--accent); line-height: 1; }
+    .m-sub { font-size: 12px; color: var(--cinza-4); margin-top: 4px; }
+
+    /* CALENDÁRIO */
+    .agenda-layout { display: grid; grid-template-columns: 300px 1fr; gap: 1rem; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
+    .cal-nav-mes { font-size: 14px; font-weight: 600; }
+    .btn-nav { background: none; border: 1px solid var(--preto-4); border-radius: 6px; padding: 4px 10px; font-size: 18px; cursor: pointer; color: var(--cinza-3); line-height: 1; }
+    .btn-nav:hover { border-color: var(--accent-2); color: var(--accent); }
+    .cal-header-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
+    .cal-header-grid span { text-align: center; font-size: 11px; color: var(--cinza-4); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+    .cal-dia { aspect-ratio: 1; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; color: var(--cinza-3); transition: all .12s; position: relative; gap: 2px; }
+    .cal-dia:hover:not(.vazio):not(.passado) { background: var(--preto-3); color: var(--accent); }
+    .cal-dia.hoje { font-weight: 700; color: var(--accent); }
+    .cal-dia.passado { color: var(--cinza-4); cursor: default; }
+    .cal-dia.vazio { cursor: default; }
+    .cal-dia.selected { background: var(--accent); color: #fff; font-weight: 700; }
+    .cal-dia.tem-ag::after { content: ''; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--verde); position: absolute; bottom: 4px; }
+    .cal-dia.selected.tem-ag::after { background: #fff; }
+
+    /* AGENDAMENTOS */
+    .filtro-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .filtro-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--preto-4); background: transparent; font-size: 12px; cursor: pointer; color: var(--cinza-3); }
+    .filtro-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .ag-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--preto-3); }
+    .ag-row:last-child { border-bottom: none; }
+    .ag-hora { font-size: 13px; font-weight: 600; min-width: 46px; }
+    .ag-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--preto-3); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .ag-info { flex: 1; }
+    .ag-nome { font-size: 14px; font-weight: 500; }
+    .ag-detalhe { font-size: 12px; color: var(--cinza-3); margin-top: 2px; }
+    .ag-actions { display: flex; gap: 6px; }
+    .btn-ag { padding: 5px 10px; border-radius: 6px; border: 1px solid var(--preto-4); background: transparent; font-size: 12px; cursor: pointer; }
+    .btn-ag-ok { color: var(--verde); border-color: var(--verde-borda); }
+    .btn-ag-ok:hover { background: var(--verde-bg); }
+    .btn-ag-x { color: var(--vermelho); border-color: var(--vermelho-borda); }
+    .btn-ag-x:hover { background: var(--vermelho-bg); }
+
+    /* BADGE */
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-verde { background: var(--verde-bg); color: var(--verde); }
+    .badge-amarelo { background: var(--amarelo-bg); color: var(--amarelo); }
+    .badge-cinza { background: var(--preto-3); color: var(--cinza-3); }
+
+    /* RELATÓRIOS */
+    .periodo-tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .periodo-tab { padding: 6px 16px; border-radius: 20px; border: 1px solid var(--preto-4); background: transparent; font-size: 13px; cursor: pointer; color: var(--cinza-3); }
+    .periodo-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+    .relatorio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .bar-item { margin-bottom: 14px; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--cinza-3); margin-bottom: 6px; }
+    .bar-label span:last-child { color: var(--accent); font-weight: 600; }
+    .bar-track { height: 6px; background: var(--preto-3); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s; }
+    .chart-wrap { display: flex; align-items: flex-end; gap: 6px; height: 120px; margin-top: .5rem; }
+    .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 4px; transition: height .4s; }
+    .chart-label { font-size: 10px; color: var(--cinza-3); text-align: center; }
+    .chart-val { font-size: 10px; color: var(--accent); font-weight: 600; }
+
+    /* SERVIÇOS */
+    .servico-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--preto-3); }
+    .servico-row:last-child { border-bottom: none; }
+    .servico-info { flex: 1; }
+    .servico-nome { font-size: 14px; font-weight: 500; }
+    .servico-detalhe { font-size: 12px; color: var(--cinza-3); margin-top: 2px; }
+    .servico-actions { display: flex; gap: 6px; }
+    .edit-box { background: var(--preto-3); border-radius: var(--radius); padding: 12px; margin-top: 10px; display: none; }
+    .edit-box input { width: 100%; padding: 7px 10px; border: 1px solid var(--preto-4); border-radius: 6px; font-size: 13px; background: var(--preto-2); color: var(--accent); margin-bottom: 8px; }
+    .edit-box-btns { display: flex; gap: 8px; }
+    .edit-box-btns button { flex: 1; padding: 7px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
+
+    /* FORM */
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { font-size: 13px; color: var(--cinza-3); display: block; margin-bottom: 5px; }
+    .form-group input { width: 100%; padding: 9px 12px; border: 1px solid var(--preto-4); border-radius: var(--radius); font-size: 14px; color: var(--accent); background: var(--preto-2); }
+    .form-group input:focus { outline: none; border-color: var(--accent-2); }
+    .btn-primary { width: 100%; padding: 11px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: .5rem; }
+    .btn-primary:hover { opacity: .88; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .erro { font-size: 12px; color: var(--vermelho); margin-top: 4px; }
+
+    .loading-msg { font-size: 14px; color: var(--cinza-3); padding: 1rem 0; text-align: center; }
+    .empty-msg { font-size: 14px; color: var(--cinza-3); padding: 1.5rem 0; text-align: center; }
+    .section-label { font-size: 12px; font-weight: 600; color: var(--cinza-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .75rem; display: block; }
+
+    @media (max-width: 750px) {
+      .agenda-layout { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .relatorio-grid { grid-template-columns: 1fr; }
+      .header-inner { gap: 6px; }
+      .tab-btn { font-size: 12px; padding: 5px 10px; }
+      .main { padding: 1rem; }
+      .form-grid { grid-template-columns: 1fr; }
+      .m-value { font-size: 22px; }
     }
-    .filtro-btn {
-      padding: 5px 12px; border-radius: 20px;
-      border: 1px solid var(--cinza-2); background: var(--branco);
-      font-size: 12px; cursor: pointer; color: var(--cinza-4);
-    }
-    .filtro-btn.active { background: var(--preto); color: var(--branco); border-color: var(--preto); }
   </style>
 </head>
 <body>
 
-  <!-- TELA DE LOGIN -->
-  <div id="tela-login" class="login-barbeiro-wrap">
-    <div class="login-barbeiro-card">
-      <div class="lock-icon">🔐</div>
-      <h2>Painel de agendamentos</h2>
-      <p>Digite a senha para acessar o painel de agendamentos.</p>
-      <div class="form-group" style="text-align:left">
-        <label>Senha</label>
-        <input type="password" id="input-senha" placeholder="••••••••"
-          onkeydown="if(event.key==='Enter') fazerLogin()" />
-        <p id="erro-senha" class="erro" style="display:none">Senha incorreta.</p>
-      </div>
-      <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
+<!-- LOGIN -->
+<div id="tela-login" class="login-wrap">
+  <div class="login-card">
+    <div class="login-icon">✂️</div>
+    <h2>Painel do Barbeiro</h2>
+    <p>Barbearia Studio Gueto — Acesso restrito</p>
+    <div class="form-group" style="text-align:left">
+      <label>Senha</label>
+      <input type="password" id="input-senha" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter') fazerLogin()" />
+      <p id="erro-senha" class="erro" style="display:none">Senha incorreta.</p>
     </div>
+    <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
   </div>
+</div>
 
-  <!-- PAINEL PRINCIPAL (oculto até login) -->
-  <div id="tela-painel" style="display:none">
-
-    <header class="painel-header">
-      <div class="painel-header-inner">
-        <div class="painel-logo">
-          
-          <b>Barbearia Studio Gueto</b> 
-        </div>
-        <span class="painel-titulo">Painel de agendamentos</span>
-        <button class="btn-outline" onclick="sairBarbeiro()">Sair</button>
+<!-- PAINEL -->
+<div id="tela-painel" style="display:none">
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        Barbearia Studio Gueto
+        <span>Painel do Barbeiro</span>
       </div>
-    </header>
+      <button class="tab-btn active" onclick="irTab('agenda', this)">Agenda</button>
+      <button class="tab-btn" onclick="irTab('relatorios', this)">Relatórios</button>
+      <button class="tab-btn" onclick="irTab('servicos', this)">Serviços</button>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </header>
 
-    <main class="main">
+  <main class="main">
 
-      <!-- MÉTRICAS -->
-      <div class="metrics" id="metrics-bar">
-        <div class="metric-card"><div class="m-label">📅 Hoje</div><div class="m-value" id="m-hoje">—</div></div>
-        <div class="metric-card"><div class="m-label">✓ Confirmados</div><div class="m-value" id="m-conf">—</div></div>
-        <div class="metric-card"><div class="m-label">⏳ Pendentes</div><div class="m-value" id="m-pend">—</div></div>
-      </div>
-
-      <!-- CALENDÁRIO COMPLETO -->
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-          <h3 style="font-size:15px;font-weight:600">Calendário de agendamentos</h3>
-          <div class="mes-nav-btns">
-            <button class="btn-icon" onclick="mudarMesBarbeiro(-1)">&#8249;</button>
-            <span id="barb-mes-label" style="font-size:13px;font-weight:500;min-width:120px;text-align:center"></span>
-            <button class="btn-icon" onclick="mudarMesBarbeiro(1)">&#8250;</button>
+    <!-- AGENDA -->
+    <section id="tab-agenda" class="tab-section active">
+      <div class="metrics-grid" id="metrics-bar"></div>
+      <div class="agenda-layout">
+        <div class="card">
+          <div class="cal-nav">
+            <button class="btn-nav" onclick="mudarMes(-1)">&#8249;</button>
+            <span class="cal-nav-mes" id="mes-label"></span>
+            <button class="btn-nav" onclick="mudarMes(1)">&#8250;</button>
           </div>
-        </div>
-        <div class="barb-cal-semana">
-          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
-        </div>
-        <div class="barb-cal-grid" id="barb-cal-grid"></div>
-      </div>
-
-      <!-- LISTA DE AGENDAMENTOS DO DIA -->
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
-          <h3 class="section-label" id="titulo-dia">Selecione um dia no calendário</h3>
-          <div class="filtro-bar" style="margin-bottom:0">
-            <button class="filtro-btn active" onclick="filtrar('todos', this)">Todos</button>
-            <button class="filtro-btn" onclick="filtrar('pendente', this)">Pendentes</button>
-            <button class="filtro-btn" onclick="filtrar('confirmado', this)">Confirmados</button>
+          <div class="cal-header-grid">
+            <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
           </div>
+          <div class="cal-grid" id="cal-grid"></div>
         </div>
-        <div id="lista-barbeiro"><p class="empty-msg">Clique em um dia para ver os agendamentos.</p></div>
-      </div>
-
-      <!-- EMAILS -->
-      <div class="card">
-        <h3 class="section-label" style="margin-bottom:.75rem">Emails automáticos</h3>
-        <div class="email-badges">
-          <div class="email-badge"><span class="dot green"></span> Confirmação ao agendar</div>
-          <div class="email-badge"><span class="dot green"></span> Lembrete 1 dia antes</div>
-          <div class="email-badge"><span class="dot green"></span> Aviso ao barbeiro</div>
-        </div>
-      </div>
-
-    </main>
-  </div>
-
-  <script>
-    const SUPABASE_URL = 'https://gjqmufgqkdcengursevi.supabase.co'
-    const SUPABASE_KEY = 'sb_publishable_a0OQA0T0LGcvipxLgEv4eg_ZBx_uI3R'
-    const SENHA_CORRETA = 'teste123'
-
-    const { createClient } = supabase
-    const db = createClient(SUPABASE_URL, SUPABASE_KEY)
-
-    let mesBarbeiro = new Date()
-    let diaAtivo = null
-    let agendamentosDoDia = []
-    let filtroAtivo = 'todos'
-    let diasComAgendamento = new Set()
-
-    // ===== LOGIN =====
-    function fazerLogin() {
-      const senha = document.getElementById('input-senha').value
-      if (senha !== SENHA_CORRETA) {
-        document.getElementById('erro-senha').style.display = 'block'
-        return
-      }
-      document.getElementById('tela-login').style.display = 'none'
-      document.getElementById('tela-painel').style.display = 'block'
-      iniciarPainel()
-    }
-
-    function sairBarbeiro() {
-      document.getElementById('tela-login').style.display = 'flex'
-      document.getElementById('tela-painel').style.display = 'none'
-      document.getElementById('input-senha').value = ''
-    }
-
-    // ===== PAINEL =====
-    async function iniciarPainel() {
-      await carregarMetricas()
-      await carregarDiasComAgendamento()
-      renderCalendarioBarbeiro()
-      // abrir no dia de hoje automaticamente
-      const hoje = new Date().toISOString().substring(0, 10)
-      diaAtivo = hoje
-      await carregarDiaBarbeiro(hoje)
-    }
-
-    async function carregarMetricas() {
-      const hoje = new Date().toISOString().substring(0, 10)
-      const { data } = await db
-        .from('agendamentos')
-        .select('status')
-        .gte('data_hora', hoje + 'T00:00:00')
-        .lte('data_hora', hoje + 'T23:59:59')
-        .in('status', ['pendente', 'confirmado'])
-
-      const total = data ? data.length : 0
-      const conf = data ? data.filter(a => a.status === 'confirmado').length : 0
-      const pend = data ? data.filter(a => a.status === 'pendente').length : 0
-      document.getElementById('m-hoje').textContent = total
-      document.getElementById('m-conf').textContent = conf
-      document.getElementById('m-pend').textContent = pend
-    }
-
-    async function carregarDiasComAgendamento() {
-      // buscar todos os dias que têm agendamento (sem limite)
-      const { data } = await db
-        .from('agendamentos')
-        .select('data_hora')
-        .in('status', ['pendente', 'confirmado'])
-
-      diasComAgendamento = new Set(
-        (data || []).map(a => a.data_hora.substring(0, 10))
-      )
-    }
-
-    // ===== CALENDÁRIO BARBEIRO =====
-    function renderCalendarioBarbeiro() {
-      const mes = mesBarbeiro
-      const label = mes.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-      document.getElementById('barb-mes-label').textContent =
-        label.charAt(0).toUpperCase() + label.slice(1)
-
-      const grid = document.getElementById('barb-cal-grid')
-      grid.innerHTML = ''
-
-      const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1)
-      const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 0)
-      const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
-
-      for (let i = 0; i < primeiroDia.getDay(); i++) {
-        const v = document.createElement('div')
-        v.className = 'barb-dia vazio'
-        grid.appendChild(v)
-      }
-
-      for (let d = 1; d <= ultimoDia.getDate(); d++) {
-        const data = new Date(mes.getFullYear(), mes.getMonth(), d)
-        const dataStr = `${mes.getFullYear()}-${String(mes.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-        const div = document.createElement('div')
-        div.textContent = d
-
-        let classes = 'barb-dia'
-        if (data.getDay() === 0) classes += ' passado' // domingo bloqueado
-        if (diasComAgendamento.has(dataStr)) classes += ' tem-ag'
-        if (data.toDateString() === hoje.toDateString()) classes += ' hoje'
-        if (diaAtivo === dataStr) classes += ' selected'
-
-        div.className = classes
-
-        if (data.getDay() !== 0) {
-          div.addEventListener('click', () => selecionarDiaBarbeiro(dataStr, div))
-        }
-        grid.appendChild(div)
-      }
-    }
-
-    async function selecionarDiaBarbeiro(dataStr, el) {
-      document.querySelectorAll('.barb-dia').forEach(d => d.classList.remove('selected'))
-      el.classList.add('selected')
-      diaAtivo = dataStr
-      await carregarDiaBarbeiro(dataStr)
-    }
-
-    function mudarMesBarbeiro(dir) {
-      mesBarbeiro = new Date(mesBarbeiro.getFullYear(), mesBarbeiro.getMonth() + dir, 1)
-      renderCalendarioBarbeiro()
-    }
-
-    // ===== LISTA DO DIA =====
-    async function carregarDiaBarbeiro(dataStr) {
-      const lista = document.getElementById('lista-barbeiro')
-      lista.innerHTML = '<div class="loading-msg">Carregando...</div>'
-
-      const d = new Date(dataStr + 'T00:00:00')
-      const dataFmt = d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
-      document.getElementById('titulo-dia').textContent =
-        dataFmt.charAt(0).toUpperCase() + dataFmt.slice(1)
-
-      const { data: ags } = await db
-        .from('agendamentos')
-        .select('*, clientes(nome, telefone, email), servicos(nome, duracao_min, preco)')
-        .gte('data_hora', dataStr + 'T00:00:00')
-        .lte('data_hora', dataStr + 'T23:59:59')
-        .in('status', ['pendente', 'confirmado'])
-        .order('data_hora')
-
-      agendamentosDoDia = ags || []
-      renderListaBarbeiro()
-      await carregarMetricas()
-    }
-
-    function filtrar(status, btn) {
-      filtroAtivo = status
-      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'))
-      btn.classList.add('active')
-      renderListaBarbeiro()
-    }
-
-    function renderListaBarbeiro() {
-      const lista = document.getElementById('lista-barbeiro')
-      const ags = filtroAtivo === 'todos'
-        ? agendamentosDoDia
-        : agendamentosDoDia.filter(a => a.status === filtroAtivo)
-
-      if (!ags.length) {
-        lista.innerHTML = '<p class="empty-msg">Nenhum agendamento encontrado.</p>'
-        return
-      }
-
-      lista.innerHTML = ''
-      ags.forEach(ag => {
-        const hora = ag.data_hora.substring(11, 16)
-        const nome = ag.clientes.nome
-        const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
-        const badge = ag.status === 'confirmado'
-          ? '<span class="badge badge-verde">Confirmado</span>'
-          : '<span class="badge badge-amarelo">Pendente</span>'
-
-        const row = document.createElement('div')
-        row.className = 'barb-row'
-        row.id = 'row-' + ag.id
-        row.innerHTML = `
-          <div class="barb-hora">${hora}</div>
-          <div class="barb-avatar">${iniciais}</div>
-          <div class="barb-info">
-            <div class="barb-nome">${nome}</div>
-            <div class="barb-servico">
-              ${ag.servicos.nome} · ${ag.servicos.duracao_min} min ·
-              R$ ${Number(ag.servicos.preco).toFixed(2).replace('.', ',')} ·
-              📞 ${ag.clientes.telefone}
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+            <span class="section-label" id="titulo-dia" style="margin-bottom:0">Selecione um dia</span>
+            <div class="filtro-bar" style="margin-bottom:0">
+              <button class="filtro-btn active" onclick="filtrar('todos',this)">Todos</button>
+              <button class="filtro-btn" onclick="filtrar('pendente',this)">Pendentes</button>
+              <button class="filtro-btn" onclick="filtrar('confirmado',this)">Confirmados</button>
             </div>
           </div>
-          ${badge}
-          <div class="barb-actions">
-            ${ag.status === 'pendente'
-              ? `<button class="btn-barb btn-barb-ok" title="Confirmar" onclick="confirmarAg('${ag.id}')">✓</button>`
-              : ''}
-            <button class="btn-barb btn-barb-x" title="Cancelar" onclick="cancelarAg('${ag.id}')">✕</button>
+          <div id="lista-agenda"><p class="empty-msg">Clique em um dia para ver os agendamentos.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RELATÓRIOS -->
+    <section id="tab-relatorios" class="tab-section">
+      <div class="periodo-tabs">
+        <button class="periodo-tab active" onclick="carregarRelatorio('dia',this)">Hoje</button>
+        <button class="periodo-tab" onclick="carregarRelatorio('semana',this)">Esta semana</button>
+        <button class="periodo-tab" onclick="carregarRelatorio('mes',this)">Este mês</button>
+      </div>
+      <div class="metrics-grid" id="metrics-relatorio"></div>
+      <div class="relatorio-grid">
+        <div class="card">
+          <div class="card-title">Serviços mais agendados</div>
+          <div id="chart-servicos"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Agendamentos por dia da semana</div>
+          <div id="chart-semana"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Agendamentos por hora do dia</div>
+        <div class="chart-wrap" id="chart-horas"></div>
+      </div>
+    </section>
+
+    <!-- SERVIÇOS -->
+    <section id="tab-servicos" class="tab-section">
+      <div class="card">
+        <div class="card-title">Serviços cadastrados</div>
+        <div id="lista-servicos"><div class="loading-msg">Carregando...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Adicionar novo serviço</div>
+        <div class="form-group">
+          <label>Nome do serviço</label>
+          <input type="text" id="novo-nome" placeholder="Ex: Degradê" />
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Preço (R$)</label>
+            <input type="number" id="novo-preco" placeholder="35" />
           </div>
-        `
-        lista.appendChild(row)
-      })
+          <div class="form-group">
+            <label>Duração (minutos)</label>
+            <input type="number" id="novo-duracao" placeholder="30" />
+          </div>
+        </div>
+        <button class="btn-primary" onclick="adicionarServico()">+ Adicionar serviço</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://gjqmufgqkdcengursevi.supabase.co'
+  const SUPABASE_KEY = 'sb_publishable_a0OQA0T0LGcvipxLgEv4eg_ZBx_uI3R'
+  const SENHA = 'teste123'
+
+  const { createClient } = supabase
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+  let mesAtual = new Date()
+  let diaAtivo = null
+  let agsDoDia = []
+  let filtroAtivo = 'todos'
+  let diasComAg = new Set()
+
+  // LOGIN
+  function fazerLogin() {
+    const s = document.getElementById('input-senha').value
+    if (s !== SENHA) { document.getElementById('erro-senha').style.display = 'block'; return }
+    document.getElementById('tela-login').style.display = 'none'
+    document.getElementById('tela-painel').style.display = 'block'
+    iniciar()
+  }
+  function sair() {
+    document.getElementById('tela-login').style.display = 'flex'
+    document.getElementById('tela-painel').style.display = 'none'
+    document.getElementById('input-senha').value = ''
+  }
+
+  // TABS
+  function irTab(nome, btn) {
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'))
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+    document.getElementById('tab-' + nome).classList.add('active')
+    btn.classList.add('active')
+    if (nome === 'relatorios') carregarRelatorio('dia', document.querySelector('.periodo-tab'))
+    if (nome === 'servicos') carregarServicos()
+  }
+
+  // INICIAR
+  async function iniciar() {
+    await carregarMetricas()
+    await carregarDiasComAg()
+    renderCal()
+    const hoje = new Date().toISOString().substring(0,10)
+    diaAtivo = hoje
+    await carregarDia(hoje)
+  }
+
+  // MÉTRICAS
+  async function carregarMetricas() {
+    const hoje = new Date().toISOString().substring(0,10)
+    const { data } = await db.from('agendamentos').select('status')
+      .gte('data_hora', hoje + 'T00:00:00').lte('data_hora', hoje + 'T23:59:59')
+      .in('status', ['pendente','confirmado'])
+
+    const total = data ? data.length : 0
+    const conf = data ? data.filter(a => a.status === 'confirmado').length : 0
+    const pend = data ? data.filter(a => a.status === 'pendente').length : 0
+
+    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0)
+    const { data: mes } = await db.from('agendamentos').select('id')
+      .gte('data_hora', inicioMes.toISOString()).in('status', ['pendente','confirmado'])
+
+    document.getElementById('metrics-bar').innerHTML = `
+      <div class="metric-card"><div class="m-label">📅 Hoje</div><div class="m-value">${total}</div><div class="m-sub">agendamentos</div></div>
+      <div class="metric-card"><div class="m-label">✓ Confirmados</div><div class="m-value">${conf}</div></div>
+      <div class="metric-card"><div class="m-label">⏳ Pendentes</div><div class="m-value">${pend}</div></div>
+      <div class="metric-card"><div class="m-label">📆 Este mês</div><div class="m-value">${mes ? mes.length : 0}</div><div class="m-sub">agendamentos</div></div>
+    `
+  }
+
+  // CALENDÁRIO
+  async function carregarDiasComAg() {
+    const { data } = await db.from('agendamentos').select('data_hora').in('status', ['pendente','confirmado'])
+    diasComAg = new Set((data || []).map(a => a.data_hora.substring(0,10)))
+  }
+
+  function renderCal() {
+    const mes = mesAtual
+    const label = mes.toLocaleDateString('pt-BR', { month:'long', year:'numeric' })
+    document.getElementById('mes-label').textContent = label.charAt(0).toUpperCase() + label.slice(1)
+    const grid = document.getElementById('cal-grid')
+    grid.innerHTML = ''
+    const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1)
+    const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 0)
+    const hoje = new Date(); hoje.setHours(0,0,0,0)
+
+    for (let i = 0; i < primeiroDia.getDay(); i++) {
+      const v = document.createElement('div'); v.className = 'cal-dia vazio'; grid.appendChild(v)
+    }
+    for (let d = 1; d <= ultimoDia.getDate(); d++) {
+      const data = new Date(mes.getFullYear(), mes.getMonth(), d)
+      const dataStr = `${mes.getFullYear()}-${String(mes.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+      const div = document.createElement('div')
+      div.textContent = d
+      let cls = 'cal-dia'
+      if (data < hoje) cls += ' passado'
+      else {
+        if (data.toDateString() === hoje.toDateString()) cls += ' hoje'
+        if (diasComAg.has(dataStr)) cls += ' tem-ag'
+        if (diaAtivo === dataStr) cls += ' selected'
+        div.addEventListener('click', () => selecionarDia(dataStr, div))
+      }
+      div.className = cls
+      grid.appendChild(div)
+    }
+  }
+
+  function mudarMes(dir) {
+    mesAtual = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + dir, 1)
+    renderCal()
+  }
+
+  async function selecionarDia(dataStr, el) {
+    document.querySelectorAll('.cal-dia').forEach(d => d.classList.remove('selected'))
+    el.classList.add('selected')
+    diaAtivo = dataStr
+    await carregarDia(dataStr)
+  }
+
+  async function carregarDia(dataStr) {
+    const lista = document.getElementById('lista-agenda')
+    lista.innerHTML = '<div class="loading-msg">Carregando...</div>'
+    const d = new Date(dataStr + 'T00:00:00')
+    const dataFmt = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' })
+    document.getElementById('titulo-dia').textContent = dataFmt.charAt(0).toUpperCase() + dataFmt.slice(1)
+
+    const { data: ags } = await db.from('agendamentos')
+      .select('*, clientes(nome, telefone), servicos(nome, duracao_min, preco)')
+      .gte('data_hora', dataStr + 'T00:00:00').lte('data_hora', dataStr + 'T23:59:59')
+      .in('status', ['pendente','confirmado']).order('data_hora')
+
+    agsDoDia = ags || []
+    renderLista()
+    carregarMetricas()
+  }
+
+  function filtrar(status, btn) {
+    filtroAtivo = status
+    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    renderLista()
+  }
+
+  function renderLista() {
+    const lista = document.getElementById('lista-agenda')
+    const ags = filtroAtivo === 'todos' ? agsDoDia : agsDoDia.filter(a => a.status === filtroAtivo)
+    if (!ags.length) { lista.innerHTML = '<p class="empty-msg">Nenhum agendamento.</p>'; return }
+    lista.innerHTML = ''
+    ags.forEach(ag => {
+      const hora = ag.data_hora.substring(11,16)
+      const nome = ag.clientes.nome
+      const ini = nome.split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase()
+      const badge = ag.status === 'confirmado'
+        ? '<span class="badge badge-verde">Confirmado</span>'
+        : '<span class="badge badge-amarelo">Pendente</span>'
+      const row = document.createElement('div')
+      row.className = 'ag-row'
+      row.innerHTML = `
+        <div class="ag-hora">${hora}</div>
+        <div class="ag-avatar">${ini}</div>
+        <div class="ag-info">
+          <div class="ag-nome">${nome}</div>
+          <div class="ag-detalhe">${ag.servicos.nome} · ${ag.servicos.duracao_min}min · R$ ${Number(ag.servicos.preco).toFixed(2).replace('.',',')} · 📞 ${ag.clientes.telefone}</div>
+        </div>
+        ${badge}
+        <div class="ag-actions">
+          ${ag.status === 'pendente' ? `<button class="btn-ag btn-ag-ok" onclick="confirmarAg('${ag.id}')">✓</button>` : ''}
+          <button class="btn-ag btn-ag-x" onclick="cancelarAg('${ag.id}')">✕</button>
+        </div>
+      `
+      lista.appendChild(row)
+    })
+  }
+
+  async function confirmarAg(id) {
+    await db.from('agendamentos').update({ status: 'confirmado' }).eq('id', id)
+    await carregarDiasComAg(); renderCal(); await carregarDia(diaAtivo)
+  }
+  async function cancelarAg(id) {
+    if (!confirm('Cancelar este agendamento?')) return
+    await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id)
+    await carregarDiasComAg(); renderCal(); await carregarDia(diaAtivo)
+  }
+
+  // RELATÓRIOS
+  async function carregarRelatorio(periodo, btn) {
+    document.querySelectorAll('.periodo-tab').forEach(b => b.classList.remove('active'))
+    if (btn) btn.classList.add('active')
+
+    const agora = new Date()
+    let inicio, fim
+
+    if (periodo === 'dia') {
+      inicio = new Date(); inicio.setHours(0,0,0,0)
+      fim = new Date(); fim.setHours(23,59,59,999)
+    } else if (periodo === 'semana') {
+      inicio = new Date(); inicio.setDate(agora.getDate() - agora.getDay()); inicio.setHours(0,0,0,0)
+      fim = new Date(inicio); fim.setDate(inicio.getDate() + 6); fim.setHours(23,59,59,999)
+    } else {
+      inicio = new Date(agora.getFullYear(), agora.getMonth(), 1)
+      fim = new Date(agora.getFullYear(), agora.getMonth() + 1, 0, 23, 59, 59)
     }
 
-    async function confirmarAg(id) {
-      await db.from('agendamentos').update({ status: 'confirmado' }).eq('id', id)
-      await carregarDiasComAgendamento()
-      renderCalendarioBarbeiro()
-      await carregarDiaBarbeiro(diaAtivo)
-    }
+    const { data: ags } = await db.from('agendamentos')
+      .select('*, servicos(nome, preco)')
+      .gte('data_hora', inicio.toISOString()).lte('data_hora', fim.toISOString())
+      .in('status', ['pendente','confirmado'])
 
-    async function cancelarAg(id) {
-      if (!confirm('Cancelar este agendamento?')) return
-      await db.from('agendamentos').update({ status: 'cancelado' }).eq('id', id)
-      await carregarDiasComAgendamento()
-      renderCalendarioBarbeiro()
-      await carregarDiaBarbeiro(diaAtivo)
-    }
-  </script>
+    const total = ags ? ags.length : 0
+    const fat = ags ? ags.reduce((s, a) => s + Number(a.servicos.preco), 0) : 0
+    const conf = ags ? ags.filter(a => a.status === 'confirmado').length : 0
+    const ticket = total > 0 ? fat / total : 0
+
+    document.getElementById('metrics-relatorio').innerHTML = `
+      <div class="metric-card"><div class="m-label">Total</div><div class="m-value">${total}</div><div class="m-sub">agendamentos</div></div>
+      <div class="metric-card"><div class="m-label">Faturamento</div><div class="m-value" style="font-size:20px">R$ ${fat.toFixed(2).replace('.',',')}</div></div>
+      <div class="metric-card"><div class="m-label">Ticket médio</div><div class="m-value" style="font-size:20px">R$ ${ticket.toFixed(2).replace('.',',')}</div></div>
+      <div class="metric-card"><div class="m-label">Confirmados</div><div class="m-value">${conf}</div></div>
+    `
+
+    // Serviços
+    const contS = {}
+    ;(ags || []).forEach(a => { contS[a.servicos.nome] = (contS[a.servicos.nome] || 0) + 1 })
+    const maxS = Math.max(...Object.values(contS), 1)
+    document.getElementById('chart-servicos').innerHTML = Object.keys(contS).length === 0
+      ? '<p class="empty-msg">Sem dados no período.</p>'
+      : Object.entries(contS).sort((a,b) => b[1]-a[1]).map(([n,q]) => `
+          <div class="bar-item">
+            <div class="bar-label"><span>${n}</span><span>${q} agendamento${q!==1?'s':''}</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${(q/maxS)*100}%"></div></div>
+          </div>`).join('')
+
+    // Por dia da semana
+    const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+    const contD = {0:0,1:0,2:0,3:0,4:0,5:0,6:0}
+    ;(ags || []).forEach(a => { const d = new Date(a.data_hora).getDay(); contD[d]++ })
+    const maxD = Math.max(...Object.values(contD), 1)
+    document.getElementById('chart-semana').innerHTML = '<div class="chart-wrap">' +
+      Object.entries(contD).map(([d,q]) => `
+        <div class="chart-col">
+          <span class="chart-val">${q||''}</span>
+          <div class="chart-bar" style="height:${Math.max((q/maxD)*100, q>0?8:4)}px"></div>
+          <span class="chart-label">${dias[d]}</span>
+        </div>`).join('') + '</div>'
+
+    // Por hora
+    const horas = ['08h','09h','10h','11h','12h','13h','14h','15h','16h','17h']
+    const contH = {}
+    ;(ags || []).forEach(a => { const h = a.data_hora.substring(11,13)+'h'; contH[h] = (contH[h]||0)+1 })
+    const maxH = Math.max(...horas.map(h => contH[h]||0), 1)
+    document.getElementById('chart-horas').innerHTML = horas.map(h => `
+      <div class="chart-col">
+        <span class="chart-val">${contH[h]||''}</span>
+        <div class="chart-bar" style="height:${Math.max(((contH[h]||0)/maxH)*100, contH[h]?8:4)}px"></div>
+        <span class="chart-label">${h}</span>
+      </div>`).join('')
+  }
+
+  // SERVIÇOS
+  async function carregarServicos() {
+    const { data } = await db.from('servicos').select('*').order('preco')
+    const el = document.getElementById('lista-servicos')
+    if (!data || !data.length) { el.innerHTML = '<p class="empty-msg">Nenhum serviço.</p>'; return }
+    el.innerHTML = data.map(s => `
+      <div class="servico-row" id="srow-${s.id}">
+        <div class="servico-info">
+          <div class="servico-nome">${s.nome}</div>
+          <div class="servico-detalhe">R$ ${Number(s.preco).toFixed(2).replace('.',',')} · ${s.duracao_min} min</div>
+        </div>
+        <span class="badge ${s.ativo ? 'badge-verde' : 'badge-cinza'}">${s.ativo ? 'Ativo' : 'Inativo'}</span>
+        <div class="servico-actions">
+          <button class="btn-ag" onclick="abrirEditar('${s.id}','${s.nome}','${s.preco}','${s.duracao_min}')">✏️</button>
+          <button class="btn-ag btn-ag-x" onclick="excluirServico('${s.id}')">🗑</button>
+        </div>
+      </div>
+      <div class="edit-box" id="edit-${s.id}">
+        <input type="text" id="edit-nome-${s.id}" placeholder="Nome" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <input type="number" id="edit-preco-${s.id}" placeholder="Preço" />
+          <input type="number" id="edit-dur-${s.id}" placeholder="Duração (min)" />
+        </div>
+        <div class="edit-box-btns">
+          <button style="background:#fff;border:1px solid #e2ddd6;color:#6b6560;border-radius:8px" onclick="fecharEditar('${s.id}')">Cancelar</button>
+          <button style="background:#1a1a1a;border:none;color:#fff;border-radius:8px" onclick="salvarEditar('${s.id}')">Salvar</button>
+        </div>
+      </div>
+    `).join('')
+  }
+
+  function abrirEditar(id, nome, preco, duracao) {
+    document.querySelectorAll('.edit-box').forEach(b => b.style.display = 'none')
+    const box = document.getElementById('edit-' + id)
+    document.getElementById('edit-nome-' + id).value = nome
+    document.getElementById('edit-preco-' + id).value = preco
+    document.getElementById('edit-dur-' + id).value = duracao
+    box.style.display = 'block'
+  }
+  function fecharEditar(id) { document.getElementById('edit-' + id).style.display = 'none' }
+
+  async function salvarEditar(id) {
+    const nome = document.getElementById('edit-nome-' + id).value.trim()
+    const preco = parseFloat(document.getElementById('edit-preco-' + id).value)
+    const duracao = parseInt(document.getElementById('edit-dur-' + id).value)
+    if (!nome || !preco || !duracao) { alert('Preencha todos os campos.'); return }
+    await db.from('servicos').update({ nome, preco, duracao_min: duracao }).eq('id', id)
+    fecharEditar(id)
+    carregarServicos()
+  }
+
+  async function excluirServico(id) {
+    if (!confirm('Excluir este serviço?')) return
+    await db.from('servicos').delete().eq('id', id)
+    carregarServicos()
+  }
+
+  async function adicionarServico() {
+    const nome = document.getElementById('novo-nome').value.trim()
+    const preco = parseFloat(document.getElementById('novo-preco').value)
+    const duracao = parseInt(document.getElementById('novo-duracao').value)
+    if (!nome || !preco || !duracao) { alert('Preencha todos os campos.'); return }
+    const { error } = await db.from('servicos').insert({ nome, preco, duracao_min: duracao, ativo: true })
+    if (error) { alert('Erro ao adicionar. Verifique as permissões no Supabase.'); console.error(error); return }
+    document.getElementById('novo-nome').value = ''
+    document.getElementById('novo-preco').value = ''
+    document.getElementById('novo-duracao').value = ''
+    carregarServicos()
+  }
+</script>
 </body>
 </html>

@@ -266,7 +266,7 @@ async function confirmarAgendamento() {
     const dataFmt = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'long' })
     document.getElementById('email-preview').innerHTML = `
       <strong>Para:</strong> ${email}<br>
-      <strong>Assunto:</strong> ✅ Agendamento confirmado — Barbearia do Carlos<br><br>
+      <strong>Assunto:</strong> ✅ Agendamento confirmado — Barbearia Studio Gueto<br><br>
       Olá <strong>${nome}</strong>! Seu agendamento foi confirmado para <strong>${dataFmt} às ${estado.horario}</strong>.<br>
       Serviço: ${estado.servico.nome} · R$ ${Number(estado.servico.preco).toFixed(2).replace('.',',')}.<br>
       <small style="color:#6b6560">Um lembrete será enviado 1 dia antes.</small>
