@@ -3,7 +3,7 @@
 // ============================================================
 const SUPABASE_URL = 'https://gjqmufgqkdcengursevi.supabase.co'
 const SUPABASE_KEY = 'sb_publishable_a0OQA0T0LGcvipxLgEv4eg_ZBx_uI3R'
-const EMAIL_BARBEIRO = 'yagoguiguis1221@gmail.com'
+const EMAIL_BARBEIRO = 'studiojanabeautyy@gmail.com'
 
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY)
