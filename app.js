@@ -40,7 +40,7 @@ let estado = {
   categoriaAtiva: null
 }
 
-const HORARIOS = ['08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00']
+const HORARIOS = ['09:00','10:00','11:00','13:00','14:00','15:00','16:00']
 
 // ============================================================
 //  NAVEGAÇÃO
@@ -279,7 +279,7 @@ async function confirmarAgendamento() {
     const dataFmt = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'long' })
     document.getElementById('email-preview').innerHTML = `
       <strong>Para:</strong> ${email}<br>
-      <strong>Assunto:</strong> ✅ Agendamento confirmado — Barbearia Studio Gueto<br><br>
+      <strong>Assunto:</strong> ✅ Agendamento confirmado — Studio jana beauty<br><br>
       Olá <strong>${nome}</strong>! Seu agendamento foi confirmado para <strong>${dataFmt} às ${estado.horario}</strong>.<br>
       Serviço: ${estado.servico.nome} · R$ ${Number(estado.servico.preco).toFixed(2).replace('.',',')}.<br>
       <small style="color:#6b6560">Um lembrete será enviado 1 dia antes.</small>
