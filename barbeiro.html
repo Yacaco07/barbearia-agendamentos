@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a1a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-mobile-web-app-title" content="Studio Jana" />
+<link rel="apple-touch-icon" href="studio.png" />
+<link rel="manifest" href="manifest.json" />
   <title>Painel — Jana Beauty</title>
   <link rel="icon" type="image/png" href="studio.png" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -250,7 +257,7 @@
   </div>
   <div class="form-group">
     <label>Categoria</label>
-    <select id="novo-categoria" style="width:100%;padding:9px 12px;border:1px solid var(--preto-4);border-radius:var(--radius);font-size:14px;color:var(--accent);background:var(--preto-2);appearance:auto;">
+   <select id="novo-categoria" style="width:100%;padding:9px 12px;border:1px solid var(--preto-4);border-radius:var(--radius);font-size:14px;color:var(--accent);background:var(--preto-2);appearance:auto;">
   <option value="">Selecione uma categoria</option>
   <option value="cilios">Cílios</option>
   <option value="lash_lifting">Lash Lifting</option>
@@ -608,5 +615,12 @@
     carregarServicos()
   }
 </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+    }
+  </script>
+
+
 </body>
 </html>

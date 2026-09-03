@@ -1,0 +1,22 @@
+{
+  "name": "Barbearia Studio Gueto",
+  "short_name": "Studio Gueto",
+  "description": "Painel de agendamentos da Barbearia Studio Gueto",
+  "start_url": "/barbeiro.html",
+  "display": "standalone",
+  "background_color": "#f8f7f5",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "studio.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "studio.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
