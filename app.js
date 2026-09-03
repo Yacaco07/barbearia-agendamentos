@@ -3,15 +3,13 @@
 // ============================================================
 const SUPABASE_URL = 'https://gjqmufgqkdcengursevi.supabase.co'
 const SUPABASE_KEY = 'sb_publishable_a0OQA0T0LGcvipxLgEv4eg_ZBx_uI3R'
-
-// ⚠️ Troque pelo email real do barbeiro
 const EMAIL_BARBEIRO = 'yagoguiguis1221@gmail.com'
 
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // ============================================================
-//  ENVIO DE EMAIL VIA EDGE FUNCTION
+//  ENVIO DE EMAIL
 // ============================================================
 async function enviarEmail({ tipo, cliente, servico, dataHora, email }) {
   try {
@@ -33,13 +31,13 @@ async function enviarEmail({ tipo, cliente, servico, dataHora, email }) {
 // ============================================================
 let estado = {
   servico: null,
-  dataObj: null,
   dataStr: '',
   horario: null,
   clienteId: null,
   clienteNome: '',
   clienteTel: '',
-  mesAtual: new Date()
+  mesAtual: new Date(),
+  categoriaAtiva: null
 }
 
 const HORARIOS = ['08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00']
@@ -60,13 +58,35 @@ function irTela(tela) {
 }
 
 // ============================================================
-//  PASSO 1: SERVIÇOS
+//  PASSO 1 — CATEGORIAS E SERVIÇOS
 // ============================================================
-async function carregarServicos() {
-  const { data, error } = await db.from('servicos').select('*').eq('ativo', true).order('preco')
-  if (error || !data) return
+async function selecionarCategoria(categoria, el) {
+  // Destaca categoria selecionada
+  document.querySelectorAll('.categoria-card').forEach(c => c.classList.remove('selected'))
+  el.classList.add('selected')
+  estado.categoriaAtiva = categoria
+  estado.servico = null
+
+  // Mostra serviços da categoria
+  document.getElementById('categorias-box').style.display = 'none'
+  document.getElementById('servicos-box').style.display = 'block'
+  document.getElementById('btn-continuar-servico').style.display = 'block'
 
   const grid = document.getElementById('lista-servicos')
+  grid.innerHTML = '<div class="loading-msg">Carregando serviços...</div>'
+
+  const { data, error } = await db
+    .from('servicos')
+    .select('*')
+    .eq('ativo', true)
+    .eq('categoria', categoria)
+    .order('preco')
+
+  if (error || !data || data.length === 0) {
+    grid.innerHTML = '<div class="loading-msg">Nenhum serviço encontrado nesta categoria.</div>'
+    return
+  }
+
   grid.innerHTML = ''
   data.forEach(s => {
     const card = document.createElement('div')
@@ -86,6 +106,16 @@ async function carregarServicos() {
   })
 }
 
+function voltarCategorias() {
+  document.getElementById('categorias-box').style.display = 'block'
+  document.getElementById('servicos-box').style.display = 'none'
+  document.getElementById('btn-continuar-servico').style.display = 'none'
+  document.getElementById('erro-servico').style.display = 'none'
+  estado.servico = null
+  estado.categoriaAtiva = null
+  document.querySelectorAll('.categoria-card').forEach(c => c.classList.remove('selected'))
+}
+
 function irPasso(n) {
   if (n === 2 && !estado.servico) {
     document.getElementById('erro-servico').style.display = 'block'
@@ -100,13 +130,14 @@ function irPasso(n) {
     const d = new Date(estado.dataStr + 'T00:00:00')
     const dataFmt = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'long' })
     document.getElementById('resumo-agendamento').innerHTML = `
-      <span>✂️ <strong>${estado.servico.nome}</strong></span>
+      <span>✨ <strong>${estado.servico.nome}</strong></span>
       <span>📅 <strong>${dataFmt} às ${estado.horario}</strong></span>
       <span>💰 <strong>R$ ${Number(estado.servico.preco).toFixed(2).replace('.',',')}</strong></span>
     `
   }
   document.querySelectorAll('.passo').forEach(p => p.classList.remove('active'))
   document.getElementById('passo-' + n).classList.add('active')
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // ============================================================
@@ -198,7 +229,7 @@ async function selecionarData(dataStr, el) {
 }
 
 // ============================================================
-//  CONFIRMAR AGENDAMENTO + EMAILS
+//  CONFIRMAR AGENDAMENTO
 // ============================================================
 async function confirmarAgendamento() {
   const nome = document.getElementById('input-nome').value.trim()
@@ -216,7 +247,6 @@ async function confirmarAgendamento() {
   btn.textContent = 'Salvando...'
 
   try {
-    // upsert cliente pelo telefone
     let { data: clientes } = await db.from('clientes').select('id').eq('telefone', tel).limit(1)
     let clienteId
 
@@ -229,7 +259,6 @@ async function confirmarAgendamento() {
       clienteId = novo.id
     }
 
-    // criar agendamento
     const dataHora = `${estado.dataStr}T${estado.horario}:00`
     const { error: errAg } = await db.from('agendamentos').insert({
       cliente_id: clienteId,
@@ -243,25 +272,9 @@ async function confirmarAgendamento() {
     estado.clienteNome = nome
     estado.clienteTel = tel
 
-    // ✉️ Email de confirmação para o cliente
-    await enviarEmail({
-      tipo: 'confirmacao',
-      cliente: nome,
-      servico: estado.servico.nome,
-      dataHora,
-      email
-    })
+    await enviarEmail({ tipo: 'confirmacao', cliente: nome, servico: estado.servico.nome, dataHora, email })
+    await enviarEmail({ tipo: 'barbeiro', cliente: nome, servico: estado.servico.nome, dataHora, email: EMAIL_BARBEIRO })
 
-    // ✉️ Aviso para o barbeiro
-    await enviarEmail({
-      tipo: 'barbeiro',
-      cliente: nome,
-      servico: estado.servico.nome,
-      dataHora,
-      email: EMAIL_BARBEIRO
-    })
-
-    // montar preview na tela
     const d = new Date(estado.dataStr + 'T00:00:00')
     const dataFmt = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'long' })
     document.getElementById('email-preview').innerHTML = `
@@ -285,11 +298,16 @@ function novoAgendamento() {
   estado.servico = null
   estado.dataStr = ''
   estado.horario = null
+  estado.categoriaAtiva = null
   document.getElementById('input-nome').value = ''
   document.getElementById('input-email').value = ''
   document.getElementById('input-tel').value = ''
-  document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'))
   document.getElementById('slots-section').style.display = 'none'
+  // Voltar para categorias
+  document.getElementById('categorias-box').style.display = 'block'
+  document.getElementById('servicos-box').style.display = 'none'
+  document.getElementById('btn-continuar-servico').style.display = 'none'
+  document.querySelectorAll('.categoria-card').forEach(c => c.classList.remove('selected'))
   irPasso(1)
 }
 
@@ -356,12 +374,12 @@ function renderListaAgendamentos(containerId, lista, passado) {
       <div class="appt-card-header">
         <div>
           <div class="appt-data">📅 ${dataFmt} · ${hora}</div>
-          <div class="appt-local">Barbearia do Carlos</div>
+          <div class="appt-local">Studio Gueto</div>
         </div>
         ${badge}
       </div>
       <div class="appt-card-body">
-        <div class="appt-servico">✂️ ${ag.servicos.nome} · ${ag.servicos.duracao_min} min</div>
+        <div class="appt-servico">✨ ${ag.servicos.nome} · ${ag.servicos.duracao_min} min</div>
         <div class="appt-preco">R$ ${Number(ag.servicos.preco).toFixed(2).replace('.',',')}</div>
       </div>
       ${!passado ? `
@@ -437,7 +455,6 @@ async function confirmarRemarcar(id, dataStr) {
   const lista = document.getElementById('slots-remarcar-' + id)
   const selected = lista.querySelector('.slot.selected')
   if (!selected) { alert('Selecione um horário.'); return }
-
   const novaHora = `${dataStr}T${selected.textContent}:00`
   await db.from('agendamentos').update({ data_hora: novaHora, status: 'pendente' }).eq('id', id)
   document.getElementById('remarcar-' + id).style.display = 'none'
@@ -454,5 +471,4 @@ function sairMeus() {
 // ============================================================
 //  INICIALIZAÇÃO
 // ============================================================
-carregarServicos()
 renderCalendario()

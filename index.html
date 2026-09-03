@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Barbearia Studio Gueto — Agendamentos</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- <link rel="icon" type="image/png" href="studio.png" />
+  <link rel="icon" type="image/png" href="studio.png" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -14,7 +14,7 @@
     <header class="header">
       <div class="header-inner">
         <div class="logo">
-         <b>Barbearia Studio Gueto</b>
+          <b>Barbearia Studio Gueto</b>
         </div>
         <nav class="nav">
           <button class="nav-btn active" data-screen="agendar">Agendar</button>
@@ -40,11 +40,33 @@
           </div>
           <div class="card">
             <h2>Escolha o serviço</h2>
-            <div class="service-grid" id="lista-servicos">
-              <div class="loading-msg">Carregando serviços...</div>
+
+            <!-- CATEGORIAS -->
+            <div id="categorias-box">
+              <div class="categoria-grid">
+                <div class="categoria-card" onclick="selecionarCategoria('cilios', this)">
+                  <div class="cat-icon">👁️</div>
+                  <div class="cat-nome">Cílios</div>
+                  <div class="cat-sub">Extensão de cílios</div>
+                </div>
+                <div class="categoria-card" onclick="selecionarCategoria('lash_lifting', this)">
+                  <div class="cat-icon">✨</div>
+                  <div class="cat-nome">Lash Lifting</div>
+                  <div class="cat-sub">Lifting e laminação</div>
+                </div>
+              </div>
             </div>
+
+            <!-- SERVIÇOS DA CATEGORIA -->
+            <div id="servicos-box" style="display:none">
+              <button class="btn-voltar" onclick="voltarCategorias()">← Voltar para categorias</button>
+              <div class="service-grid" id="lista-servicos">
+                <div class="loading-msg">Carregando serviços...</div>
+              </div>
+            </div>
+
             <p id="erro-servico" class="erro" style="display:none">Selecione um serviço para continuar.</p>
-            <button class="btn-primary" onclick="irPasso(2)">Continuar</button>
+            <button class="btn-primary" id="btn-continuar-servico" onclick="irPasso(2)" style="display:none">Continuar</button>
           </div>
         </div>
 
@@ -137,7 +159,7 @@
       <!-- ===== MEUS AGENDAMENTOS ===== -->
       <section id="screen-meus" class="screen">
         <div id="meus-login" class="card login-card">
-        <img src="agendamentos.png" style="width:160px;object-fit:contain;margin-bottom:1rem;" />
+          <img src="agendamentos.png" style="width:160px;object-fit:contain;margin-bottom:1rem;" />
           <h2>Meus agendamentos</h2>
           <p class="login-sub">Digite seu telefone para ver e gerenciar seus agendamentos.</p>
           <div class="form-group">
