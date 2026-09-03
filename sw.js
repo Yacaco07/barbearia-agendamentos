@@ -1,6 +1,6 @@
 const CACHE_NAME = 'studio-gueto-v1'
 const FILES = [
-  '/barbeiro.html',
+  '/jana.html',
   '/style.css',
   '/studio.png'
 ]

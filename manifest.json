@@ -2,7 +2,7 @@
   "name": "Barbearia Studio Gueto",
   "short_name": "Studio Gueto",
   "description": "Painel de agendamentos da Barbearia Studio Gueto",
-  "start_url": "/barbeiro.html",
+  "start_url": "/jana.html",
   "display": "standalone",
   "background_color": "#f8f7f5",
   "theme_color": "#1a1a1a",
