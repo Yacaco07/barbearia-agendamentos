@@ -243,11 +243,19 @@
         <div id="lista-servicos"><div class="loading-msg">Carregando...</div></div>
       </div>
       <div class="card">
-        <div class="card-title">Adicionar novo serviço</div>
-        <div class="form-group">
-          <label>Nome do serviço</label>
-          <input type="text" id="novo-nome" placeholder="Ex: Degradê" />
-        </div>
+  <div class="card-title">Adicionar novo serviço</div>
+  <div class="form-group">
+    <label>Nome do serviço</label>
+    <input type="text" id="novo-nome" placeholder="Ex: Degradê" />
+  </div>
+  <div class="form-group">
+    <label>Categoria</label>
+    <select id="novo-categoria" style="width:100%;padding:9px 12px;border:1px solid var(--preto-4);border-radius:var(--radius);font-size:14px;color:var(--accent);background:var(--preto-2);"></select>
+      <option value="">Selecione uma categoria</option>
+      <option value="cilios">Cílios</option>
+      <option value="lash_lifting">Lash Lifting</option>
+    </select>
+  </div>
         <div class="form-grid">
           <div class="form-group">
             <label>Preço (R$)</label>
@@ -585,12 +593,14 @@
     const nome = document.getElementById('novo-nome').value.trim()
     const preco = parseFloat(document.getElementById('novo-preco').value)
     const duracao = parseInt(document.getElementById('novo-duracao').value)
-    if (!nome || !preco || !duracao) { alert('Preencha todos os campos.'); return }
-    const { error } = await db.from('servicos').insert({ nome, preco, duracao_min: duracao, ativo: true })
+    const categoria = document.getElementById('novo-categoria').value
+    if (!nome || !preco || !duracao || !categoria) { alert('Preencha todos os campos incluindo a categoria.'); return }
+    const { error } = await db.from('servicos').insert({ nome, preco, duracao_min: duracao, ativo: true, categoria })
     if (error) { alert('Erro ao adicionar. Verifique as permissões no Supabase.'); console.error(error); return }
     document.getElementById('novo-nome').value = ''
     document.getElementById('novo-preco').value = ''
     document.getElementById('novo-duracao').value = ''
+    document.getElementById('novo-categoria').value = ''
     carregarServicos()
   }
 </script>
